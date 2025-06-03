@@ -36,7 +36,7 @@ A Home Assistant custom integration for interfacing with Aptus home entrance loc
 3. Search for "Aptus Home"
 4. Follow the configuration flow to set up your Aptus Home connection
 
-> IMPORTANT: Make sure the host parameter is correctly formated. Example: https://DOMAIN.aptustotal.se/AptusPortal/Account/
+> IMPORTANT: Make sure the host parameter is correctly formated. Example: https://DOMAIN.aptustotal.se/AptusPortal/
 
 ## Development
 
