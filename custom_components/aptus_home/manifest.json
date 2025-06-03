@@ -1,0 +1,11 @@
+{
+  "domain": "aptus_home",
+  "name": "Aptus Home",
+  "codeowners": ["@HLVM04"],
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/aptus_home",
+  "iot_class": "cloud_polling",
+  "quality_scale": "bronze",
+  "requirements": ["beautifulsoup4==4.13.4"],
+  "version": "0.1.0"
+}
