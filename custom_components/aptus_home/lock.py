@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.lock import LockEntity
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import AptusHomeConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from . import AptusHomeConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ async def async_setup_entry(
     client = entry.runtime_data
 
     # Get available locks from the client
-    locks_data = await hass.async_add_executor_job(client.list_available_locks)
+    locks_data = await hass.async_add_executor_job(client.list_available_locks)  # type: ignore  # noqa: PGH003
     if isinstance(locks_data, list):
         entities = [AptusHomeLock(client, lock_info) for lock_info in locks_data]
         async_add_entities(entities)
@@ -35,7 +37,7 @@ async def async_setup_entry(
 class AptusHomeLock(LockEntity):
     """Representation of an Aptus Home lock."""
 
-    def __init__(self, client, lock_info: dict[str, Any]) -> None:
+    def __init__(self, client, lock_info: dict[str, Any]) -> None:  # noqa: ANN001
         """Initialize the lock."""
         self._client = client
         self._lock_info = lock_info
@@ -68,7 +70,7 @@ class AptusHomeLock(LockEntity):
         """Lock the device."""
         # Can't lock the entrance doors, it automatically locks when closed.
 
-    async def async_unlock(self, **kwargs: Any) -> None:
+    async def async_unlock(self) -> None:
         """Unlock the device."""
         result = await self.hass.async_add_executor_job(
             self._client.unlock_entrance_door, self._lock_id

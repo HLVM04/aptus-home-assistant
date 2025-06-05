@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .AptusClient import AptusClient
+from .aptus_client import AptusClient
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 _PLATFORMS: list[Platform] = [Platform.LOCK]
 
@@ -27,9 +31,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: AptusHomeConfigEntry) ->
     try:
         login_success = await hass.async_add_executor_job(client.login)
         if not login_success:
-            raise ConfigEntryNotReady("Failed to authenticate with Aptus Home")  # noqa: TRY301
+            msg = "Failed to authenticate with Aptus Home"
+            raise ConfigEntryNotReady(msg)  # noqa: TRY301
     except Exception as err:
-        raise ConfigEntryNotReady(f"Failed to connect to Aptus Home: {err}") from err
+        msg = f"Failed to connect to Aptus Home: {err}"
+        raise ConfigEntryNotReady(msg) from err
 
     # Store API object for platforms to access
     entry.runtime_data = client

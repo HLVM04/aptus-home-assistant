@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
-from .AptusClient import AptusClient
+from .aptus_client import AptusClient
 from .const import DOMAIN
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -81,9 +83,9 @@ class AptusHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
 
-class CannotConnect(HomeAssistantError):
+class CannotConnect(HomeAssistantError):  # noqa: N818
     """Error to indicate we cannot connect."""
 
 
-class InvalidAuth(HomeAssistantError):
+class InvalidAuth(HomeAssistantError):  # noqa: N818
     """Error to indicate there is invalid auth."""

@@ -1,6 +1,7 @@
 """AptusPortal API Client for Home Assistant integration."""
 
 import json
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -12,7 +13,7 @@ class AptusError(Exception):
 
 
 class AptusLoginError(AptusError):
-    """Raised when login to the AptusPortal fails, either due to incorrect credentials or other issues."""
+    """Raised when login to the AptusPortal fails due to incorrect credentials."""
 
 
 class AptusNotLoggedInError(AptusError):
@@ -23,9 +24,13 @@ class AptusAPIError(AptusError):
     """Raised when the AptusPortal API returns an error response."""
 
     def __init__(
-        self, message, http_code=None, api_message=None, status_text=None
+        self,
+        message: str,
+        http_code: int | None = None,
+        api_message: str | None = None,
+        status_text: str | None = None,
     ) -> None:
-        """Initialize the AptusAPIError with an error message, HTTP code, API message, and status text."""
+        """Initialize with an error message, HTTP code, API message, and status text."""
         super().__init__(message)
         self.http_code = http_code
         self.api_message = api_message
@@ -33,7 +38,7 @@ class AptusAPIError(AptusError):
 
 
 class AptusDependencyError(AptusError):
-    """Raised when a required dependency for the AptusPortal client is not installed or available."""
+    """Raised when a required dependency for the AptusPortal client is not installed."""
 
 
 class AptusClient:
@@ -41,28 +46,30 @@ class AptusClient:
 
     def __init__(
         self,
-        base_url=None,
-        username=None,
-        password=None,
+        base_url: str,
+        username: str | None = None,
+        password: str | None = None,
     ) -> None:
         """Initialize the AptusClient with base URL, username, and password."""
-        self.base_url = base_url
-        self.session = requests.Session()
+        self.base_url: str = base_url
+        self.session: requests.Session = requests.Session()
         self.session.headers.update(
             {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36.",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 "
+                "Safari/537.36.",
             }
         )
-        self.username = username
-        self.password = password
-        self._logged_in = False
-        self._request_verification_token = None
-        self._password_salt = None
+        self.username: str | None = username
+        self.password: str | None = password
+        self._logged_in: bool = False
+        self._request_verification_token: str | None = None
+        self._password_salt: str | None = None
 
-    def _make_url(self, endpoint):
+    def _make_url(self, endpoint: str) -> str:
         return urljoin(self.base_url, endpoint)
 
-    def _encrypt_password(self, password_str, salt_str):
+    def _encrypt_password(self, password_str: str, salt_str: str | None) -> str:
         """Replicates the XOR encryption logic from pwEnc.js."""
         if not salt_str:
             salt_str = "611"
@@ -80,12 +87,14 @@ class AptusClient:
 
         return "".join(encrypted_chars)
 
-    def _get_login_page_details(self):
+    def _get_login_page_details(self) -> bool:
         login_page_url = self._make_url("Account/Login")
 
         fetch_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
@@ -102,18 +111,18 @@ class AptusClient:
             soup = BeautifulSoup(response.text, "html.parser")
 
             token_input = soup.find("input", {"name": "__RequestVerificationToken"})
-            if token_input and token_input.get("value"):
-                self._request_verification_token = token_input["value"]
+            if token_input and token_input.get("value"):  # type: ignore  # noqa: PGH003
+                self._request_verification_token = token_input["value"]  # type: ignore  # noqa: PGH003
             else:
                 return False
 
             salt_input = soup.find(
                 "input", {"id": "PasswordSalt", "name": "PasswordSalt"}
             )
-            if salt_input and salt_input.get("value"):
-                self._password_salt = salt_input["value"]
+            if salt_input and salt_input.get("value"):  # type: ignore  # noqa: PGH003
+                self._password_salt = salt_input["value"]  # type: ignore  # noqa: PGH003
             else:
-                self._password_salt = "611"
+                self._password_salt = "611"  # noqa: S105
 
             return True  # noqa: TRY300
 
@@ -124,7 +133,7 @@ class AptusClient:
         except requests.exceptions.RequestException:
             return False
 
-    def login(self, username=None, password=None):
+    def login(self, username: str | None = None, password: str | None = None) -> bool:
         """Login to the AptusPortal with provided username and password."""
         if username:
             self.username = username
@@ -155,7 +164,7 @@ class AptusClient:
             "PasswordSalt": self._password_salt,
         }
 
-        post_headers = self.session.headers.copy()
+        post_headers = dict(self.session.headers)
         post_headers.pop("X-Requested-With", None)
         post_headers["Content-Type"] = "application/x-www-form-urlencoded"
         post_headers["Referer"] = self._make_url("Account/Login")
@@ -193,13 +202,20 @@ class AptusClient:
             self._logged_in = False
             return False
 
-    def _request(self, method, endpoint, params=None, data=None, expect_json=True):
+    def _request(
+        self,
+        method: str,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        expect_json: bool = True,  # noqa: FBT001, FBT002
+    ) -> dict[str, Any] | str:
         if not self._logged_in and not endpoint.startswith("Account/Login"):
             return {"error": "NotLoggedIn", "message": "User is not logged in."}
 
         url = self._make_url(endpoint)
 
-        current_headers = self.session.headers.copy()
+        current_headers = dict(self.session.headers)
         current_headers["X-Requested-With"] = "XMLHttpRequest"
 
         try:
@@ -241,13 +257,15 @@ class AptusClient:
         except requests.exceptions.RequestException as e:
             return {"error": "RequestException", "message": str(e)}
 
-    def logout(self):
+    def logout(self) -> str | None:
         """Logout from the AptusPortal."""
         logout_url = self._make_url("Account/LogOff")
 
         logout_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
@@ -278,34 +296,46 @@ class AptusClient:
             self._password_salt = None
             return None
 
-    def set_lock_status_temp_data(self):
+    def set_lock_status_temp_data(self) -> str:
         """Set temporary data for lock status."""
-        return self._request("GET", "Lock/SetLockStatusTempData", expect_json=False)
+        result = self._request("GET", "Lock/SetLockStatusTempData", expect_json=False)
+        return result if isinstance(result, str) else ""
 
-    def get_doorman_lock_status(self):
+    def get_doorman_lock_status(self) -> dict[str, Any] | None:
         """Get the status of the doorman lock."""
         if not self._logged_in:
             return None
         self.set_lock_status_temp_data()
-        return self._request("GET", "LockAsync/DoormanLockStatus")
+        result = self._request("GET", "LockAsync/DoormanLockStatus")
+        return result if isinstance(result, dict) else None
 
-    def poll_ongoing_call(self):
+    def poll_ongoing_call(self) -> dict[str, Any]:
         """Poll for ongoing call status."""
-        return self._request("GET", "Lock/PollOngingCall")
+        result = self._request("GET", "Lock/PollOngingCall")
+        return result if isinstance(result, dict) else {}
 
-    def unlock_entrance_door(self, lock_id: int):
+    def unlock_entrance_door(self, lock_id: int) -> dict[str, Any]:
         """Unlock the entrance door with the given lock ID."""
-        return self._request("GET", f"Lock/UnlockEntryDoor/{lock_id}")
+        try:
+            result = self._request("GET", f"Lock/UnlockEntryDoor/{lock_id}")
+        except Exception:  # noqa: BLE001
+            # Login and retry on exception
+            self.login(self.username, self.password)
+            result = self._request("GET", f"Lock/UnlockEntryDoor/{lock_id}")
 
-    def lock_doorman_lock(self):
+        return result if isinstance(result, dict) else {}
+
+    def lock_doorman_lock(self) -> dict[str, Any]:
         """Lock the doorman lock."""
-        return self._request("GET", "Lock/LockDoormanLock")
+        result = self._request("GET", "Lock/LockDoormanLock")
+        return result if isinstance(result, dict) else {}
 
-    def unlock_doorman_lock(self, code: str):
+    def unlock_doorman_lock(self, code: str) -> dict[str, Any]:
         """Unlock the doorman lock with the given code."""
-        return self._request("GET", "Lock/UnlockDoormanLock", params={"code": code})
+        result = self._request("GET", "Lock/UnlockDoormanLock", params={"code": code})
+        return result if isinstance(result, dict) else {}
 
-    def list_available_locks(self):
+    def list_available_locks(self) -> list[dict[str, int | str]] | None:
         """List all available entrance locks."""
         if not self._logged_in:
             return None
@@ -317,19 +347,19 @@ class AptusClient:
 
         soup = BeautifulSoup(response_text, "html.parser")
         lock_cards = soup.find_all("div", class_="lockCard")
-        available_locks = []
+        available_locks: list[dict[str, int | str]] = []
         for card in lock_cards:
-            if card.get("id", "").startswith("entranceDoor_"):
-                lock_id_str = card["id"].split("_")[-1]
+            if card.get("id", "").startswith("entranceDoor_"):  # type: ignore  # noqa: PGH003
+                lock_id_str = card["id"].split("_")[-1]  # type: ignore  # noqa: PGH003
                 try:
                     lock_id = int(lock_id_str)
-                    name_div = card.find("div")
-                    main_name = name_div.contents[0].strip()
-                    sub_name_span = name_div.find("span")
-                    sub_name = sub_name_span.text.strip() if sub_name_span else ""
+                    name_div = card.find("div")  # type: ignore  # noqa: PGH003
+                    main_name = name_div.contents[0].strip()  # type: ignore  # noqa: PGH003
+                    sub_name_span = name_div.find("span")  # type: ignore  # noqa: PGH003
+                    sub_name = sub_name_span.text.strip() if sub_name_span else ""  # type: ignore  # noqa: PGH003
                     full_name = f"{main_name} ({sub_name})" if sub_name else main_name
                     available_locks.append(
-                        {"id": lock_id, "name": full_name, "raw_id_attr": card["id"]}
+                        {"id": lock_id, "name": full_name, "raw_id_attr": card["id"]}  # type: ignore  # noqa: PGH003
                     )
                 except ValueError:
                     continue
@@ -339,7 +369,8 @@ class AptusClient:
 # if __name__ == "__main__":
 #     if not BeautifulSoup:
 #         print(
-#             "This script requires BeautifulSoup4 for parsing HTML (e.g., login page, lock list)."
+#             "This script requires BeautifulSoup4 for parsing HTML"
+#             "(e.g., login page, lock list)."
 #         )
 #         print("Please install it: pip install beautifulsoup4")
 #         exit()
