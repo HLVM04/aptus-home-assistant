@@ -4,6 +4,7 @@
   "codeowners": ["@HLVM04"],
   "config_flow": true,
   "documentation": "https://github.com/HLVM04/aptus-home-assistant",
+  "issue_tracker": "https://github.com/HLVM04/aptus-home-assistant/issues",
   "iot_class": "cloud_polling",
   "quality_scale": "bronze",
   "requirements": ["beautifulsoup4==4.13.4"],
