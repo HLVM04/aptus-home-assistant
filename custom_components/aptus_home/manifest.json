@@ -3,7 +3,7 @@
   "name": "Aptus Home",
   "codeowners": ["@HLVM04"],
   "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/aptus_home",
+  "documentation": "https://github.com/HLVM04/aptus-home-assistant",
   "iot_class": "cloud_polling",
   "quality_scale": "bronze",
   "requirements": ["beautifulsoup4==4.13.4"],
